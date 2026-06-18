@@ -2,40 +2,40 @@
 <html lang="en">
 <head>
     <style>
-        :root { --bg: #0f111a; --card: #1a1c29; --text: #ffffff; --accent: linear-gradient(90deg, #60a5fa, #c084fc); --glow: 0 0 15px rgba(99, 102, 241, 0.6); }
-        .light-mode { --bg: #f3f4f6; --card: #ffffff; --text: #1f2937; }
+        :root { --bg: #0f111a; --card: #1a1c29; --accent: linear-gradient(90deg, #60a5fa, #c084fc); --glow: 0 0 15px rgba(99, 102, 241, 0.6); }
+        body { margin: 0; background: var(--bg); color: white; font-family: sans-serif; height: 100vh; display: flex; justify-content: center; align-items: center; }
+
+        /* Login */
+        #login-overlay { background: var(--card); padding: 50px 80px; border-radius: 20px; border: 1px solid #4f46e5; box-shadow: var(--glow); text-align: center; }
+        input { margin: 15px 0; padding: 12px 20px; width: 250px; display: block; border-radius: 25px; border: 1px solid #333; background: #25283d; color: white; }
+        .unlock-btn { background: var(--accent); border: none; padding: 12px 40px; border-radius: 25px; color: white; cursor: pointer; font-weight: bold; }
+
+        /* Dashboard */
+        #dashboard { display: none; width: 95vw; height: 90vh; background: var(--card); border-radius: 20px; padding: 30px; box-shadow: var(--glow); position: relative; }
         
-        body { margin: 0; background: var(--bg); color: var(--text); font-family: sans-serif; height: 100vh; display: flex; justify-content: center; align-items: center; transition: 0.3s; }
+        /* Add Document Zone */
+        .add-zone { border: 2px dashed #4f46e5; height: 150px; display: flex; align-items: center; justify-content: center; border-radius: 20px; margin: 20px 0; }
+        .add-btn { background: var(--accent); border: none; padding: 10px 25px; border-radius: 20px; color: white; cursor: pointer; font-weight: bold; }
         
-        .login-card { background: var(--card); padding: 50px; border-radius: 20px; border: 1px solid #4f46e5; box-shadow: var(--glow); text-align: center; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: none; background: #25283d; color: white; }
-        
-        #dashboard { display: none; width: 95vw; height: 90vh; background: var(--card); border-radius: 20px; padding: 30px; box-shadow: var(--glow); overflow-y: auto; }
-        .gradient-text { background: var(--accent); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 2.5rem; }
-        
-        .btn { background: var(--accent); border: none; padding: 10px 20px; border-radius: 30px; color: white; cursor: pointer; font-weight: bold; margin: 5px; }
-        .drop-zone { border: 2px dashed #6366f1; height: 120px; display: flex; align-items: center; justify-content: center; border-radius: 20px; margin: 20px 0; }
-        .doc-card { display: flex; align-items: center; justify-content: space-between; background: #25283d; padding: 15px; border-radius: 10px; margin-bottom: 10px; }
+        .doc-item { display: flex; justify-content: space-between; background: #25283d; padding: 15px; border-radius: 10px; margin-top: 10px; }
+        .btn { background: var(--accent); border: none; padding: 8px 15px; border-radius: 20px; color: white; cursor: pointer; margin: 2px; }
     </style>
 </head>
 <body>
 
-    <div id="login" class="login-card">
-        <h2>Welcome Back</h2>
+    <div id="login-overlay">
+        <h2>Login</h2>
         <input type="text" id="u" placeholder="Username">
         <input type="password" id="p" placeholder="Password">
-        <button class="btn" onclick="auth()">Unlock Dashboard</button>
+        <button class="unlock-btn" onclick="auth()">Unlock</button>
     </div>
 
     <div id="dashboard">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h1 class="gradient-text">Jayant's 🏫 School Vault ✨</h1>
-            <button class="btn" onclick="document.body.classList.toggle('light-mode')">🌓 Toggle Mode</button>
-        </div>
-
-        <div class="drop-zone">
-            <input type="file" id="fileIn" style="display:none" onchange="uploadFile(this.files[0])">
-            <button class="btn" onclick="document.getElementById('fileIn').click()">+ Add Document</button>
+        <h1>Jayant's 🏫 School Vault ✨</h1>
+        
+        <div class="add-zone">
+            <input type="file" id="fileIn" style="display:none" onchange="upload(this.files[0])">
+            <button class="add-btn" onclick="document.getElementById('fileIn').click()">+ Add Document</button>
         </div>
 
         <h3>RECENT DOCUMENTS</h3>
@@ -45,40 +45,35 @@
     <script>
         function auth() {
             if(document.getElementById('u').value === 'christschoolcbse' && document.getElementById('p').value === '1310') {
-                document.getElementById('login').style.display = 'none';
+                document.getElementById('login-overlay').style.display = 'none';
                 document.getElementById('dashboard').style.display = 'block';
             } else { alert('Invalid Credentials'); }
         }
 
-        function uploadFile(file) {
+        function upload(file) {
             const reader = new FileReader();
-            reader.onload = function(e) {
-                const vault = document.getElementById('vault');
+            reader.onload = (e) => {
                 const div = document.createElement('div');
-                div.className = 'doc-card';
-                div.innerHTML = `
-                    <span class="file-name">${file.name}</span>
+                div.className = 'doc-item';
+                div.innerHTML = `<span>${file.name}</span>
                     <div>
-                        <a href="${e.target.result}" download="${file.name}"><button class="btn">Download</button></a>
-                        <button class="btn" onclick="renameFile(this)">✏️</button>
-                        <button class="btn" onclick="deleteFile(this)">🗑️</button>
-                    </div>
-                `;
-                vault.appendChild(div);
+                        <a href="${e.target.result}" download="${file.name}"><button class="btn">⬇️</button></a>
+                        <button class="btn" onclick="rename(this)">✏️</button>
+                        <button class="btn" onclick="del(this)">🗑️</button>
+                    </div>`;
+                document.getElementById('vault').appendChild(div);
             };
             reader.readAsDataURL(file);
         }
 
-        function renameFile(btn) {
-            const nameSpan = btn.parentElement.parentElement.querySelector('.file-name');
-            const newName = prompt("Enter new name:", nameSpan.innerText);
-            if (newName) nameSpan.innerText = newName;
+        function rename(btn) {
+            const name = btn.parentElement.parentElement.querySelector('span');
+            const newName = prompt("New name:", name.innerText);
+            if(newName) name.innerText = newName;
         }
 
-        function deleteFile(btn) {
-            if (confirm("Are you sure you want to delete this document?")) {
-                btn.parentElement.parentElement.remove();
-            }
+        function del(btn) {
+            if(confirm("Are you sure?")) btn.parentElement.parentElement.remove();
         }
     </script>
 </body>
