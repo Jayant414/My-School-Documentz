@@ -5,18 +5,15 @@
         :root { --bg: #0f111a; --card: #1a1c29; --accent: linear-gradient(90deg, #60a5fa, #c084fc); --glow: 0 0 15px rgba(99, 102, 241, 0.6); }
         body { margin: 0; background: var(--bg); color: white; font-family: sans-serif; height: 100vh; display: flex; justify-content: center; align-items: center; }
 
-        /* Login */
+        /* Login Layout */
         #login-overlay { background: var(--card); padding: 50px 80px; border-radius: 20px; border: 1px solid #4f46e5; box-shadow: var(--glow); text-align: center; }
         input { margin: 15px 0; padding: 12px 20px; width: 250px; display: block; border-radius: 25px; border: 1px solid #333; background: #25283d; color: white; }
         .unlock-btn { background: var(--accent); border: none; padding: 12px 40px; border-radius: 25px; color: white; cursor: pointer; font-weight: bold; }
 
-        /* Dashboard */
+        /* Dashboard Layout */
         #dashboard { display: none; width: 95vw; height: 90vh; background: var(--card); border-radius: 20px; padding: 30px; box-shadow: var(--glow); position: relative; }
-        
-        /* Add Document Zone */
         .add-zone { border: 2px dashed #4f46e5; height: 150px; display: flex; align-items: center; justify-content: center; border-radius: 20px; margin: 20px 0; }
         .add-btn { background: var(--accent); border: none; padding: 10px 25px; border-radius: 20px; color: white; cursor: pointer; font-weight: bold; }
-        
         .doc-item { display: flex; justify-content: space-between; background: #25283d; padding: 15px; border-radius: 10px; margin-top: 10px; }
         .btn { background: var(--accent); border: none; padding: 8px 15px; border-radius: 20px; color: white; cursor: pointer; margin: 2px; }
     </style>
@@ -32,17 +29,16 @@
 
     <div id="dashboard">
         <h1>Jayant's 🏫 School Vault ✨</h1>
-        
         <div class="add-zone">
-            <input type="file" id="fileIn" style="display:none" onchange="upload(this.files[0])">
+            <input type="file" id="fileIn" style="display:none" onchange="processFile(this.files[0])">
             <button class="add-btn" onclick="document.getElementById('fileIn').click()">+ Add Document</button>
         </div>
-
         <h3>RECENT DOCUMENTS</h3>
         <div id="vault"></div>
     </div>
 
     <script>
+        // LOGIN LOGIC
         function auth() {
             if(document.getElementById('u').value === 'christschoolcbse' && document.getElementById('p').value === '1310') {
                 document.getElementById('login-overlay').style.display = 'none';
@@ -50,30 +46,49 @@
             } else { alert('Invalid Credentials'); }
         }
 
-        function upload(file) {
+        // SAVE AND RELOAD LOGIC
+        window.onload = () => {
+            for (let i = 0; i < localStorage.length; i++) {
+                renderFile(localStorage.key(i), localStorage.getItem(localStorage.key(i)));
+            }
+        };
+
+        function processFile(file) {
             const reader = new FileReader();
             reader.onload = (e) => {
-                const div = document.createElement('div');
-                div.className = 'doc-item';
-                div.innerHTML = `<span>${file.name}</span>
-                    <div>
-                        <a href="${e.target.result}" download="${file.name}"><button class="btn">⬇️</button></a>
-                        <button class="btn" onclick="rename(this)">✏️</button>
-                        <button class="btn" onclick="del(this)">🗑️</button>
-                    </div>`;
-                document.getElementById('vault').appendChild(div);
+                localStorage.setItem(file.name, e.target.result);
+                renderFile(file.name, e.target.result);
             };
             reader.readAsDataURL(file);
         }
 
-        function rename(btn) {
-            const name = btn.parentElement.parentElement.querySelector('span');
-            const newName = prompt("New name:", name.innerText);
-            if(newName) name.innerText = newName;
+        function renderFile(name, data) {
+            const div = document.createElement('div');
+            div.className = 'doc-item';
+            div.innerHTML = `<span>${name}</span>
+                <div>
+                    <a href="${data}" download="${name}"><button class="btn">⬇️</button></a>
+                    <button class="btn" onclick="rename(this, '${name}')">✏️</button>
+                    <button class="btn" onclick="del(this, '${name}')">🗑️</button>
+                </div>`;
+            document.getElementById('vault').appendChild(div);
         }
 
-        function del(btn) {
-            if(confirm("Are you sure?")) btn.parentElement.parentElement.remove();
+        function rename(btn, oldName) {
+            const newName = prompt("Enter new name:", oldName);
+            if(newName) {
+                const data = localStorage.getItem(oldName);
+                localStorage.removeItem(oldName);
+                localStorage.setItem(newName, data);
+                location.reload();
+            }
+        }
+
+        function del(btn, name) {
+            if(confirm("Delete this document?")) {
+                localStorage.removeItem(name);
+                btn.parentElement.parentElement.remove();
+            }
         }
     </script>
 </body>
