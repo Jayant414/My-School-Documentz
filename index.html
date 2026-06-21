@@ -30,7 +30,7 @@
     <div id="dashboard">
         <h1>Jayant's 🏫 School Vault ✨</h1>
         <div class="add-zone">
-            <input type="file" id="fileIn" accept="image/*,application/pdf,video/*" style="display:none" onchange="processFile(this.files[0])">
+            <input type="file" id="fileIn" accept="image/*,application/pdf,video/*,.doc,.docx" style="display:none" onchange="processFile(this.files[0])">
             <button class="add-btn" onclick="document.getElementById('fileIn').click()">+ Add Document</button>
         </div>
         <h3>RECENT DOCUMENTS</h3>
@@ -79,7 +79,7 @@
             document.getElementById('vault').appendChild(div);
         }
 
-        // Updated View File function to support native previewing of Videos, Images, and PDFs via Blob URLs
+        // Fixed Word document processor to unpack internal data streams correctly using Mammoth engine
         function viewFile(name) {
             const data = localStorage.getItem(name);
             if (data) {
@@ -98,8 +98,63 @@
                     const blob = new Blob([byteArray], { type: contentType });
                     const blobUrl = URL.createObjectURL(blob);
                     
-                    // If it's a video file, create an HTML player structure inside the tab so it plays correctly
-                    if (contentType.startsWith('video/')) {
+                    // Route Word files through Mammoth rendering template
+                    if (contentType.includes('msword') || contentType.includes('officedocument.wordprocessingml')) {
+                        const newWindow = window.open();
+                        if (newWindow) {
+                            newWindow.document.write(`
+                                <html>
+                                <head>
+                                    <title>Preview: ${name}</title>
+                                    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"><\/script>
+                                    <style>
+                                        body { background: #0f111a; color: #e2e8f0; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 40px; margin: 0; }
+                                        .container { background: #1a1c29; padding: 40px; border-radius: 12px; border: 1px solid #4f46e5; max-width: 800px; width: 100%; box-shadow: 0 0 15px rgba(99, 102, 241, 0.4); }
+                                        h2 { margin-top: 0; color: #60a5fa; border-bottom: 1px solid #334155; padding-bottom: 10px; }
+                                        .content-view { font-family: sans-serif; font-size: 16px; line-height: 1.6; color: #cbd5e1; background: #11131e; padding: 25px; border-radius: 6px; border: 1px solid #222536; max-height: 70vh; overflow-y: auto; }
+                                        .badge { display: inline-block; background: linear-gradient(90deg, #60a5fa, #c084fc); padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 15px; color: white; }
+                                        p { margin: 0 0 10px 0; }
+                                    </style>
+                                </head>
+                                <body>
+                                    <div class="container">
+                                        <h2>📝 ${name}</h2>
+                                        <div class="badge">Word Document Viewer Panel</div>
+                                        <div id="output" class="content-view">Loading readable layout engine...</div>
+                                    </div>
+                                    <script>
+                                        const base64Str = "${base64Data}";
+                                        const binaryArr = atob(base64Str);
+                                        const len = binaryArr.length;
+                                        const bytes = new Uint8Array(len);
+                                        for (let i = 0; i < len; i++) {
+                                            bytes[i] = binaryArr.charCodeAt(i);
+                                        }
+                                        
+                                        window.onload = () => {
+                                            if (window.mammoth) {
+                                                window.mammoth.convertToHtml({arrayBuffer: bytes.buffer})
+                                                    .then(result => {
+                                                        document.getElementById('output').innerHTML = result.value || "<p style='color:#64748b;'>[Empty Document Content]</p>";
+                                                    })
+                                                    .catch(err => {
+                                                        document.getElementById('output').innerText = "Failed to parse underlying document formatting layout.";
+                                                    });
+                                            } else {
+                                                document.getElementById('output').innerText = "Failed to synchronize runtime script libraries.";
+                                            }
+                                        };
+                                    <\/script>
+                                </body>
+                                </html>
+                            `);
+                            newWindow.document.close();
+                        } else {
+                            alert('Pop-up blocked! Please allow pop-ups for this site to view files.');
+                        }
+                    }
+                    // Handle regular Video previews
+                    else if (contentType.startsWith('video/')) {
                         const newWindow = window.open();
                         if (newWindow) {
                             newWindow.document.write(`
@@ -117,8 +172,9 @@
                         } else {
                             alert('Pop-up blocked! Please allow pop-ups for this site to view files.');
                         }
-                    } else {
-                        // Images and PDFs can be loaded directly by the browser frame
+                    } 
+                    // Handle default Image and PDF native tab render engine
+                    else {
                         const newWindow = window.open(blobUrl, '_blank');
                         if (!newWindow) {
                             alert('Pop-up blocked! Please allow pop-ups for this site to view files.');
