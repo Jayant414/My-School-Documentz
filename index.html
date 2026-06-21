@@ -30,7 +30,7 @@
     <div id="dashboard">
         <h1>Jayant's 🏫 School Vault ✨</h1>
         <div class="add-zone">
-            <input type="file" id="fileIn" style="display:none" onchange="processFile(this.files[0])">
+            <input type="file" id="fileIn" accept="image/*,application/pdf,video/*" style="display:none" onchange="processFile(this.files[0])">
             <button class="add-btn" onclick="document.getElementById('fileIn').click()">+ Add Document</button>
         </div>
         <h3>RECENT DOCUMENTS</h3>
@@ -49,7 +49,11 @@
         // SAVE AND RELOAD LOGIC
         window.onload = () => {
             for (let i = 0; i < localStorage.length; i++) {
-                renderFile(localStorage.key(i), localStorage.getItem(localStorage.key(i)));
+                const key = localStorage.key(i);
+                const value = localStorage.getItem(key);
+                if (value && value.startsWith('data:')) {
+                    renderFile(key, value);
+                }
             }
         };
 
@@ -67,11 +71,63 @@
             div.className = 'doc-item';
             div.innerHTML = `<span>${name}</span>
                 <div>
+                    <button class="btn" onclick="viewFile('${name}')">👁️</button>
                     <a href="${data}" download="${name}"><button class="btn">⬇️</button></a>
                     <button class="btn" onclick="rename(this, '${name}')">✏️</button>
                     <button class="btn" onclick="del(this, '${name}')">🗑️</button>
                 </div>`;
             document.getElementById('vault').appendChild(div);
+        }
+
+        // Updated View File function to support native previewing of Videos, Images, and PDFs via Blob URLs
+        function viewFile(name) {
+            const data = localStorage.getItem(name);
+            if (data) {
+                try {
+                    const parts = data.split(',');
+                    const contentType = parts[0].split(':')[1].split(';')[0];
+                    const base64Data = parts[1];
+                    
+                    const byteCharacters = atob(base64Data);
+                    const byteNumbers = new Array(byteCharacters.length);
+                    for (let i = 0; i < byteCharacters.length; i++) {
+                        byteNumbers[i] = byteCharacters.charCodeAt(i);
+                    }
+                    const byteArray = new Uint8Array(byteNumbers);
+                    
+                    const blob = new Blob([byteArray], { type: contentType });
+                    const blobUrl = URL.createObjectURL(blob);
+                    
+                    // If it's a video file, create an HTML player structure inside the tab so it plays correctly
+                    if (contentType.startsWith('video/')) {
+                        const newWindow = window.open();
+                        if (newWindow) {
+                            newWindow.document.write(`
+                                <html>
+                                <head><title>${name}</title></head>
+                                <body style="margin:0; background:#0f111a; display:flex; justify-content:center; align-items:center; height:100vh; overflow:hidden;">
+                                    <video controls autoplay style="max-width:100%; max-height:100%; outline:none;">
+                                        <source src="${blobUrl}" type="${contentType}">
+                                        Your browser does not support the video tag.
+                                    </video>
+                                </body>
+                                </html>
+                            `);
+                            newWindow.document.close();
+                        } else {
+                            alert('Pop-up blocked! Please allow pop-ups for this site to view files.');
+                        }
+                    } else {
+                        // Images and PDFs can be loaded directly by the browser frame
+                        const newWindow = window.open(blobUrl, '_blank');
+                        if (!newWindow) {
+                            alert('Pop-up blocked! Please allow pop-ups for this site to view files.');
+                        }
+                    }
+                } catch (error) {
+                    alert('Error preparing file preview. Please try downloading it instead.');
+                }
+            }
         }
 
         function rename(btn, oldName) {
